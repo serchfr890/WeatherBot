@@ -1,0 +1,25 @@
+﻿{
+  "name": "WeatherEchoBotV4",
+  "services": [
+    {
+      "type": "endpoint",
+      "name": "development",
+      "endpoint": "http://localhost:3978/api/messages",
+      "appId": "",
+      "appPassword": "",
+      "id": "1"
+    },
+    {
+      "type": "luis",
+      "name": "WeatherLUISV4",
+      "appId": "b16724c8-d4ab-4893-a102-443e21cb938e",
+      "version": "0.1",
+      "authoringKey": "ece1ea6973f74a0e8295b4031731297f",
+      "subscriptionKey": "ece1ea6973f74a0e8295b4031731297f",
+      "region": "westus",
+      "id": "2"
+    }
+  ],
+  "padlock": "",
+  "version": "2.0"
+}
