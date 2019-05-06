@@ -6,9 +6,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Schema;
-using Microsoft.Bot.Builder.Dialogs;
+using WeatherEchoBotV4.Models;
 using WeatherEchoBotV4.Helpers;
 using WeatherEchoBotV4.Services;
+using System.Collections.Generic;
 
 namespace WeatherEchoBotV4
 {
@@ -31,14 +32,14 @@ namespace WeatherEchoBotV4
             {
                 var recognizer = await _services.LuisServices[LuisKey].RecognizeAsync(turnContext, cancellationToken);
                 var topIntent = recognizer?.GetTopScoringIntent();
-
+                
                 switch (topIntent.Value.intent)
                 {
                     case "Get_Weather_Condition":
                         {
                             if(topIntent != null && topIntent.HasValue && topIntent.Value.intent != "None")
                             {
-                                var location = LuisParser.GetEntityValue(recognizer);
+                                var location = LuisParser.GetEntityValue(recognizer, Constants.LocationLabel, Constants.LocationPatternLabel);
                                 if(location.ToString() != string.Empty)
                                 {
                                     var ro = await WeatherService.GetWeather(location);
@@ -82,6 +83,37 @@ namespace WeatherEchoBotV4
                             {
                                 await turnContext.SendActivityAsync(answer);
                             }
+                            break;
+                        }
+                    case "SearchVideo":
+                        {
+                            //var searchVideo = LuisParser.GetEntityValue(recognizer, Constants.VideoLabel, Constants.VideoPatternLabel);
+                            var searchVideo = recognizer.Entities.Last.First[0].ToString();
+                            var serviceVideoIndexer = new VideoIndexerService();
+                            var response = Task.Run(() => serviceVideoIndexer.SearchVideo("valor"));
+                            response.Wait();
+                            var videoList = response.Result;
+
+
+                            var reply = (turnContext.Activity as Activity).CreateReply();
+                            reply.AttachmentLayout = AttachmentLayoutTypes.Carousel;
+                        
+                            var card = videoList.Select(r => new ThumbnailCard(r.VideoTitle, r.Description, r.Duration,
+                                new List<CardImage> { new CardImage(url: r.Thumbnaill, r.VideoTitle) },
+                                new List<CardAction>
+                                {
+                                    new CardAction(ActionTypes.OpenUrl, "ver",null, value: r.UrlVideo, text:"ver", displayText:"ver"),
+                                    new CardAction(ActionTypes.OpenUrl, "Descargar", null, value: r.DownloadVideoUrl, text: "Descargar", displayText:"Descargar")
+                                }
+                                ).ToAttachment()).ToList();
+
+                            if (card.Any())
+                            {
+                                await turnContext.SendActivityAsync("Gracias por la espera, estos son los videos que encontré");
+                                reply.Attachments = card;
+                                await turnContext.SendActivityAsync(reply);
+                            }
+
                             break;
                         }
                 }

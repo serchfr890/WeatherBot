@@ -1,0 +1,14 @@
+Application ID b16724c8-d4ab-4893-a102-443e21cb938e
+Authoring Key: ece1ea6973f74a0e8295b4031731297f
+Region: westus
+EndPoint: https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/b16724c8-d4ab-4893-a102-443e21cb938e?verbose=true&timezoneOffset=-360&subscription-key=ece1ea6973f74a0e8295b4031731297f&q=
+Name: WeatherLUISV4
+
+Weather key: 2817f92970213e70ff9273be2b1cb75d
+
+
+POST /knowledgebases/3df2107d-e1cc-4f9e-9cd1-0e7cea1fa216/generateAnswer
+Host: https://kbweather.azurewebsites.net/qnamaker
+Authorization: EndpointKey a630bae5-2abf-447e-8ff5-b653a52dc5d0
+Content-Type: application/json
+{"question":"<Your question>"}

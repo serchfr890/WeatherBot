@@ -10,12 +10,12 @@ namespace WeatherEchoBotV4.Helpers
 {
     public class LuisParser
     {
-        public static string GetEntityValue(RecognizerResult result)
+        public static string GetEntityValue(RecognizerResult result, string label, string patternLabel)
         {
             foreach(var entity in result.Entities)
             {
-                var location = JObject.Parse(entity.Value.ToString())[Constants.LocationLabel];
-                var locationPattern = JObject.Parse(entity.Value.ToString())[Constants.LocationPatternLabel];
+                var location = JObject.Parse(entity.Value.ToString())[label];
+                var locationPattern = JObject.Parse(entity.Value.ToString())[patternLabel];
 
                 if(location != null || locationPattern != null)
                 {
