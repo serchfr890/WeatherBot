@@ -1,13 +1,12 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Schema;
-using Microsoft.Extensions.Logging;
+using Microsoft.Bot.Builder.Dialogs;
 using WeatherEchoBotV4.Helpers;
 using WeatherEchoBotV4.Services;
 
@@ -17,7 +16,7 @@ namespace WeatherEchoBotV4
     {
         public static readonly string LuisKey = "WeatherLUISV4";
         private readonly BotService _services;
-
+     
         public WeatherEchoBotV4Bot(BotService services)
         {
             _services = services ?? throw new System.ArgumentNullException(nameof(services));
@@ -33,38 +32,58 @@ namespace WeatherEchoBotV4
                 var recognizer = await _services.LuisServices[LuisKey].RecognizeAsync(turnContext, cancellationToken);
                 var topIntent = recognizer?.GetTopScoringIntent();
 
-                if (topIntent != null && topIntent.HasValue && topIntent.Value.intent != "None")
+                switch (topIntent.Value.intent)
                 {
-                    var location = LuisParser.GetEntityValue(recognizer);
+                    case "Get_Weather_Condition":
+                        {
+                            if(topIntent != null && topIntent.HasValue && topIntent.Value.intent != "None")
+                            {
+                                var location = LuisParser.GetEntityValue(recognizer);
+                                if(location.ToString() != string.Empty)
+                                {
+                                    var ro = await WeatherService.GetWeather(location);
+                                    var weather = $"{ro.weather.First().main}({ro.main.temp.ToString("N2")} °C)";
+                                    var typing = Activity.CreateTypingActivity();
+                                    var delay = new Activity { Type = "delay", Value = 5000 };
+                                    var activities = new IActivity[]
+                                    {
+                                        typing,
+                                        delay,
+                                        MessageFactory.Text($"Weather of {location} is: {weather}"),
+                                        MessageFactory.Text("Thanks for using our service!")
+                                    };
+                                    await turnContext.SendActivitiesAsync(activities);
+                                }
+                                else
+                                {
+                                    await turnContext.SendActivityAsync("Sorry, I don´t understand");
+                                }
+                            }
+                            else
+                            {
+                                var msg = @"No LUIS intents were found.
+                                This sample is about identifying a city and an intent:
+                                'Find the current weather in a city'
+                                Try typing 'What's the weather in Prague'";
 
-                    if (location.ToString() != string.Empty)
-                    {
-                        var ro = await WeatherService.GetWeather(location);
-                        var weather = $"{ro.weather.First().main} ({ro.main.temp.ToString("N2")} °C)";
-
-                        var typing = Activity.CreateTypingActivity();
-                        var delay = new Activity { Type = "delay", Value = 5000 };
-
-                        var activities = new IActivity[] {
-                            typing,
-                            delay,
-                            MessageFactory.Text($"Weather of {location} is: {weather}"),
-                            MessageFactory.Text("Thanks for using our service!")
-                        };
-
-                        await turnContext.SendActivitiesAsync(activities);
-                    }
-                    else
-                        await turnContext.SendActivityAsync($"==>Can't understand you, sorry!");
-                }
-                else
-                {
-                    var msg = @"No LUIS intents were found.
-                    This sample is about identifying a city and an intent:
-                    'Find the current weather in a city'
-                    Try typing 'What's the weather in Prague'";
-
-                    await turnContext.SendActivityAsync(msg);
+                                await turnContext.SendActivityAsync(msg);
+                            }
+                            break;
+                        }
+                    case "QnAMaker":
+                        {
+                            var serviceQnAMaker = new QnAMakerService();
+                            var answer = serviceQnAMaker.GetAnswer(turnContext.Activity.Text);
+                            if (answer.Equals(Constants.AnswerNotFound))
+                            {
+                                await turnContext.SendActivityAsync("Lo siento, pero no estoy preparado para este tipo de preguntas.");
+                            }
+                            else
+                            {
+                                await turnContext.SendActivityAsync(answer);
+                            }
+                            break;
+                        }
                 }
             }
             else if (turnContext.Activity.Type == ActivityTypes.ConversationUpdate)
